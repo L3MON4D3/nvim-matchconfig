@@ -117,6 +117,7 @@ local function gen_buf_config(buf, configs)
 	-- return empty config if there is no matching config.
 	local config = new_config({})
 	for _, app_conf in ipairs(matching_configs) do
+		config:barrier()
 		config:append(app_conf)
 	end
 

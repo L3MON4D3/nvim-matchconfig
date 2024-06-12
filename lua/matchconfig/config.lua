@@ -6,6 +6,7 @@
 --- @class Config
 --- @field options Option[]
 --- @field sources ConfigSource[]
+--- @field n_barriers number How many barriers do the options have at most.
 local Config = {}
 local Config_mt = {__index = Config}
 
@@ -20,7 +21,8 @@ function Config.new(t)
 	return setmetatable({
 		options = options,
 		category = t.category,
-		sources = {}
+		sources = {},
+		n_barriers = 0
 	}, Config_mt)
 end
 function Config.as_config(t_or_c)
@@ -72,9 +74,23 @@ function Config:append(t_or_c)
 	return self
 end
 
-function Config:apply(args)
+function Config:barrier()
 	for _, opt in pairs(self.options) do
-		opt:apply(args)
+		opt:barrier()
+	end
+	self.n_barriers = self.n_barriers + 1
+end
+
+function Config:apply(args)
+	local applicators = {}
+	for name, opt in pairs(self.options) do
+		applicators[name] = opt:make_applicator()
+	end
+	-- lua-for is end-inclusive => don't need +1.
+	for i = 0, self.n_barriers do
+		for _, applicator in pairs(applicators) do
+			applicator:apply_to_barrier(i, args)
+		end
 	end
 end
 

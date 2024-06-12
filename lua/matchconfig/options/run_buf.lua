@@ -22,11 +22,38 @@ function RunBuf:append(rb)
 	end
 end
 
-function RunBuf:apply(args)
-	for _, fn in ipairs(self.buf_fns) do
+local barrier = {}
+function RunBuf:barrier()
+	table.insert(self.buf_fns, barrier)
+end
+
+local RunBufApplicator = {}
+local RunBufApplicator_mt = {__index = RunBufApplicator}
+function RunBufApplicator.new(session_fns, undolists)
+	return setmetatable({
+		fns = session_fns,
+		undolists = undolists,
+		i = 1
+	}, RunBufApplicator_mt)
+end
+function RunBufApplicator:apply_to_barrier(_, args)
+	while true do
+		local fn = self.fns[self.i]
+		-- if fn is a barrier, advance past it (can resume behind it in the
+		-- next call to apply_next)
+		self.i = self.i+1
+		if fn == barrier or fn == nil then
+			return
+		end
 		table.insert(self.undolists, do_args_fn(fn, args))
 	end
 end
+
+function RunBuf:make_applicator()
+	return RunBufApplicator.new(self.buf_fns, self.undolists)
+end
+
+
 function RunBuf:undo()
 	for _, undolist in ipairs(self.undolists) do
 		undolist:run()

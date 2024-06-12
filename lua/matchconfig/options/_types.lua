@@ -2,5 +2,6 @@
 --- @field new fun(table) where table is the raw config-table.
 --- @field append_raw fun(Option, table)
 --- @field append fun(Option, Option)
---- @field apply fun(Option, Option)
+--- @field make_applicator fun(Option, Option)
+--- @field barrier fun(Option, Option)
 --- @field undo fun(Option, integer)

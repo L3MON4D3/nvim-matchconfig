@@ -1,3 +1,5 @@
+local util = require("matchconfig.util.util")
+
 --- @class Dap: Option
 --- @field type_configs table<string, table>
 local Dap = {}
@@ -16,7 +18,15 @@ function Dap.new(config)
 	}, Dap_mt)
 end
 
-function Dap:apply(args)
+Dap.barrier = util.nop
+function Dap:make_applicator()
+	return self
+end
+function Dap:apply_to_barrier(j, args)
+	if j ~= 0 then
+		return
+	end
+
 	local dap = require("dap")
 	local config_list = {}
 	for _, v in pairs(self.type_configs) do
