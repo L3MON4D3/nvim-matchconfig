@@ -122,11 +122,11 @@ local function gen_buf_config(buf, configs)
 			-- topological sort give us vertices with no incoming edges first
 			-- => vertex that should be last needs incoming edges
 			local order = mc1:order(mc2)
-			if order[matchconfig.before] then
+			if order[matchconfig.order_before] then
 				-- arbitrary edge-label.
 				digraph:set_edge(mc1, mc2, 1)
 			end
-			if order[matchconfig.after] then
+			if order[matchconfig.order_after] then
 				digraph:set_edge(mc2, mc1, 1)
 			end
 		end
