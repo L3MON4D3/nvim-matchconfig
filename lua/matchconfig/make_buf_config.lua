@@ -1,4 +1,8 @@
 local new_config = require("matchconfig.config").new
+local tbl_util = require("matchconfig.util.table")
+local labeled_digraph = require("matchconfig.util.digraph").new_labeled
+local matchconfig = require("matchconfig.matchconfig")
+
 
 local function gen_configs_from_patterns(buf, bufname, configs)
 	-- use cwd if buffer for initial buffer (I guess fname == "" is the only
@@ -95,30 +99,49 @@ end
 --   respective functions/in this function.
 local function gen_buf_config(buf, configs)
 	local bufname = vim.api.nvim_buf_get_name(buf)
-	local buf_dir = bufname_to_dir(bufname)
+
+	local bufinfo = {
+		bufnr = buf,
+		fname = bufname,
+		filetypes = tbl_util.list_to_set(vim.split(vim.bo[buf].filetype, ",", {plain=true})),
+		dir = bufname_to_dir(bufname)
+	}
 
 	local matching_configs = {}
-	-- generate configs from patterns.
-	local pattern_configs = gen_configs_from_patterns(buf, bufname, configs)
+	for _, mc in ipairs(configs) do
+		if mc:matches(bufinfo) then
+			table.insert(matching_configs, mc)
+		end
+	end
 
-	-- lowest prio: filetype-config.
-	vim.list_extend(matching_configs, filetype_configs_sorted(buf, bufname, pattern_configs, configs, vim.bo[buf].filetype))
+	local digraph = labeled_digraph()
+	for i, mc1 in ipairs(matching_configs) do
+		digraph:set_vertex(mc1)
+		for j = 1, i-1 do
+			local mc2 = matching_configs[j]
+			-- topological sort give us vertices with no incoming edges first
+			-- => vertex that should be last needs incoming edges
+			local order = mc1:order(mc2)
+			if order[matchconfig.before] then
+				-- arbitrary edge-label.
+				digraph:set_edge(mc1, mc2, 1)
+			end
+			if order[matchconfig.after] then
+				digraph:set_edge(mc2, mc1, 1)
+			end
+		end
+	end
 
-	-- next lowest priority: directory-configs, sorted by adjacency to buffer-file.
-	vim.list_extend(matching_configs, dir_configs_sorted(buf, bufname, pattern_configs, configs, buf_dir))
-
-	-- finally: file-config. Since the buffer only has one file, we just insert those in this function.
-	table.insert(matching_configs, pattern_configs.file[bufname])
-
-	if configs.file[bufname] then
-		table.insert(matching_configs, configs.file[bufname])
+	local sorted = digraph:topological_sort({consume = true})
+	if sorted == nil then
+		error("There is a cycle in your config-ordering! The cycle is contained in " .. digraph:describe())
 	end
 
 	-- return empty config if there is no matching config.
 	local config = new_config({})
-	for _, app_conf in ipairs(matching_configs) do
+	for _, app_conf in ipairs(sorted) do
 		config:barrier()
-		config:append(app_conf)
+		config:append(app_conf.config)
 	end
 
 	return config

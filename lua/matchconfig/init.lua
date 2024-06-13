@@ -1,5 +1,5 @@
 local autotable = require("auto_table").autotable
-local make_config = require("matchconfig.make_buf_config")
+local make_buf_config = require("matchconfig.make_buf_config")
 local util = require("util")
 local gen_config = require("matchconfig.gen_config")
 local config_picker = require("matchconfig.config_picker")
@@ -23,7 +23,7 @@ local function load_config(args)
 	local bufname = args.file
 	local f_conf = session.buf_configs[bufnr][bufname]
 	if not f_conf then
-		f_conf = make_config(bufnr, session.global_config)
+		f_conf = make_buf_config(bufnr, session.global_config)
 		session.buf_configs[bufnr][bufname] = f_conf
 	end
 
@@ -91,9 +91,15 @@ end
 
 M.config = require("matchconfig.config").new
 M.actions = require("matchconfig.util.actions")
+
 M.match_dir = gen_config.match_dir
 M.match_pattern = gen_config.match_pattern
 M.match_filetype = gen_config.match_filetype
 M.match_file = gen_config.match_file
+M.match = gen_config.match
+
+M.matchers = vim.tbl_map(function(i)
+	return i.new
+end, require("matchconfig.builtin_matchers"))
 
 return M
