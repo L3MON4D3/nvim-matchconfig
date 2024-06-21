@@ -1,21 +1,20 @@
 local stack_util = require("matchconfig.util.callstack")
-local table_util = require("matchconfig.util.table")
-local as_config = require("matchconfig.config").as_config
-local autotable = require("matchconfig.util.autotable").autotable
-local session = require("matchconfig.session")
+local as_config = require("matchconfig.primitives.config").as_config
 local builtin_matchers = require("matchconfig.builtin_matchers")
-local matchconfig = require("matchconfig.matchconfig")
+local matchconfig = require("matchconfig.primitives.matchconfig")
 
 local M = {}
 
 local config_list_name = "__matchconfig_configlist"
-function M.load_config(fname)
+function M.load_config(fname, fail_silently)
 	local conf_fn, err = loadfile(fname)
 	if not conf_fn then
-		error("Could not load " .. fname .. ": " .. err)
+		if not fail_silently then
+			print("Could not load configs from " .. fname .. ": " .. err)
+		end
+		return {}
 	end
 
-	-- conf_table[prio][type][id][]
 	local conf_table = {}
 	setfenv(conf_fn, setmetatable({
 		[config_list_name] = conf_table,

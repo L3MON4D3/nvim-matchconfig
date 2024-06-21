@@ -124,11 +124,15 @@ local function matcher_and(a,b)
 	end, a:human_readable(true) .. " & " .. b:human_readable(true))
 end
 
-DirMatcher_mt.__mul = matcher_and
-FileMatcher_mt.__mul = matcher_and
-FiletypeMatcher_mt.__mul = matcher_and
-PatternMatcher_mt.__mul = matcher_and
-GenericMatcher_mt.__mul = matcher_and
+local function make_matcher(matcher_mt)
+	matcher_mt.__mul = matcher_and
+end
+
+make_matcher(DirMatcher_mt)
+make_matcher(FileMatcher_mt)
+make_matcher(FiletypeMatcher_mt)
+make_matcher(PatternMatcher_mt)
+make_matcher(GenericMatcher_mt)
 
 M.dir = DirMatcher
 M.file = FileMatcher
