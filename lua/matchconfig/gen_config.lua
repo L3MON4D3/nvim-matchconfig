@@ -19,7 +19,13 @@ function M.load_config(fname, fail_silently)
 	setfenv(conf_fn, setmetatable({
 		[config_list_name] = conf_table,
 	}, {__index = _G}))
-	conf_fn()
+	local ok, run_err = pcall(conf_fn)
+	if ok ~= true then
+		if not fail_silently then
+			print("Error while running config " .. fname .. ": " .. run_err)
+		end
+		return {}
+	end
 
 	return conf_table
 end
