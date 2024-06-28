@@ -4,12 +4,12 @@ local Matchconfig = {}
 local Matchconfig_mt = {__index = Matchconfig}
 
 function Matchconfig.new(config, matcher, tags, after, before)
-	tags = matcher:tags()
-	vim.list_extend(matcher:tags(), tags or {})
+	local effective_tags = matcher:tags()
+	vim.list_extend(effective_tags, tags or {})
 	return setmetatable({
 		config = config,
 		matcher = matcher,
-		tags = tags,
+		tags = effective_tags,
 		-- what configs to run this after
 		_after = after and util.list_to_set(after) or util.empty,
 		-- what configs to run this before
