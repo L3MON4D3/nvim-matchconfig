@@ -92,5 +92,9 @@ return {
 		undo:append(function()
 			pcall(vim.api.nvim_del_autocmd, autocmd_id)
 		end)
+	end,
+	undo_append = function(fn)
+		local undo, _ = stack_util.stack_fenv_find_vars(undo_callbacks_name, bufnr_name)
+		undo:append(fn)
 	end
 }
