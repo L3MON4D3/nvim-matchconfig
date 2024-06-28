@@ -23,8 +23,11 @@ local function set_config_data(opts)
 
 	data.configfile_watcher_id = vim.api.nvim_create_autocmd({"BufWritePost"}, {
 		callback = function()
+			-- notify config_picker that the file changed and the parser needs
+			-- to be reloaded.
 			require("matchconfig.config_picker").reset(data.configfile)
-			require("matchconfig").reload()
+			-- don't fail silently.
+			M.reload_same_opts(false)
 		end,
 		pattern = data.configfile
 	})
