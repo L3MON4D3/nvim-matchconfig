@@ -1,4 +1,5 @@
 local gen_config = require("matchconfig.gen_config")
+local data = require("matchconfig.session.data")
 local session = require("matchconfig.session")
 
 local M = {}
@@ -8,6 +9,10 @@ function M.setup(opts)
 end
 
 M.pick_current = require("matchconfig.config_picker").pick_current
+
+function M.get_configfile()
+	return data.configfile
+end
 
 function M.get_config(bufnr)
 	return session.get_config(bufnr)
