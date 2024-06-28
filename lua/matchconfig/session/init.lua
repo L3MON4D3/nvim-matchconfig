@@ -18,7 +18,8 @@ local function set_config_data(opts)
 	opts = opts or {}
 	opts = vim.tbl_extend("keep", opts, default_opts)
 
-	data.configfile = vim.fs.joinpath(vim.fn.stdpath("config"), opts.path)
+	local stdpath_config = vim.fn.stdpath("config") --[[ @as string ]]
+	data.configfile = vim.fs.joinpath(stdpath_config, opts.path)
 	data.options = opts.options
 
 	data.configfile_watcher_id = vim.api.nvim_create_autocmd({"BufWritePost"}, {
