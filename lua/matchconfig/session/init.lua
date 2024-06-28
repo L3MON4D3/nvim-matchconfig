@@ -14,7 +14,7 @@ local default_opts = {
 }
 
 -- set user-options provided by user.
-local function set_config(opts)
+local function set_config_data(opts)
 	opts = opts or {}
 	opts = vim.tbl_extend("keep", opts, default_opts)
 
@@ -60,7 +60,7 @@ end
 
 -- call before everything else.
 function M.initialize(fail_silently)
-	set_config(default_opts)
+	set_config_data(default_opts)
 	set_derived_data(fail_silently)
 end
 
@@ -94,7 +94,7 @@ end
 function M.reload_new_opts(opts, fail_silently)
 	unload()
 	reset_config()
-	set_config(opts)
+	set_config_data(opts)
 	set_derived_data(fail_silently)
 	load_open_bufs()
 end
