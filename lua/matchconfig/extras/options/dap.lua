@@ -1,29 +1,46 @@
 local util = require("matchconfig.util.util")
 
---- @class Dap: Option
+--- @class Matchconfig.Extras.Dap: Matchconfig.Option
 --- @field type_configs table<string, table>
 local Dap = {}
 local Dap_mt = { __index = Dap }
 
 function Dap.new(config)
-	local type_configs = {}
-	if config.dap then
-		for _, dap_conf in ipairs(config.dap) do
-			type_configs[dap_conf.my_type] = dap_conf
-		end
-	end
-
 	return setmetatable({
-		type_configs = type_configs,
+		type_configs = config.dap or {},
 	}, Dap_mt)
 end
 
-Dap.barrier = util.nop
-function Dap:make_applicator()
-	return self
+function Dap:copy()
+	-- noref: true
+	return setmetatable({
+		type_configs = vim.deepcopy(self.type_configs, true)
+	}, Dap_mt)
 end
-function Dap:apply_to_barrier(j, args)
-	if j ~= 0 then
+
+function Dap:append_raw(t)
+	if t.dap then
+		for _, dap_conf in ipairs(t.dap) do
+			self.type_configs[dap_conf.my_type] = dap_conf
+		end
+	end
+end
+function Dap:append(dap)
+	for type, dap_conf in pairs(dap.type_configs) do
+		self.type_configs[type] = dap_conf
+	end
+end
+Dap.barrier = util.nop
+
+local DapApplicator = {}
+local DapApplicator_mt = {__index = DapApplicator}
+
+function DapApplicator.new(type_configs)
+	return setmetatable({type_configs = type_configs}, DapApplicator_mt)
+end
+function DapApplicator:apply_to_barrier(j, args)
+	-- only apply once, partial apply doesn't really make sense.
+	if j ~= 1 then
 		return
 	end
 
@@ -57,21 +74,16 @@ function Dap:apply_to_barrier(j, args)
 	end, { buffer = args.buf })
 end
 
-function Dap:append_raw(t)
-	if t.dap then
-		for _, dap_conf in ipairs(t.dap) do
-			self.type_configs[dap_conf.my_type] = dap_conf
-		end
-	end
-end
-function Dap:append(dap)
-	for type, dap_conf in pairs(dap.type_configs) do
-		self.type_configs[type] = dap_conf
-	end
-end
-
-function Dap:undo(bufnr, _)
+function DapApplicator:undo(bufnr)
+	-- pcall in case the keymap was already deleted.
 	pcall(vim.keymap.del, "n", "<F5>", { buffer = bufnr })
 end
 
-return Dap
+function Dap:make_applicator()
+	return DapApplicator.new(self.type_configs)
+end
+
+return {
+	new = Dap.new,
+	reset = util.nop
+}

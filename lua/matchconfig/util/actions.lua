@@ -1,11 +1,15 @@
 local stack_util = require("matchconfig.util.callstack")
 
---- @class Undolist
+--- @class Matchconfig.Undolist
 local Undolist = {}
 local Undolist_mt = { __index = Undolist }
 
 function Undolist.new()
 	return setmetatable({}, Undolist_mt)
+end
+
+function Undolist:copy()
+	return setmetatable(vim.list_slice(self, 1, #self), Undolist_mt)
 end
 function Undolist:run()
 	for i = #self, 1, -1 do

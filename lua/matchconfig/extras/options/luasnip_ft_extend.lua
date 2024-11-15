@@ -1,12 +1,18 @@
 local util = require("matchconfig.util.util")
 
---- @class LuasnipFT: Option
+--- @class Matchconfig.Extras.LuasnipFT: Matchconfig.Option
 --- @field ft_extensions table<string, string[]>
 local LuasnipFT = {}
 local LuasnipFT_mt = { __index = LuasnipFT }
 function LuasnipFT.new(config)
 	return setmetatable({
 		ft_extensions = config.luasnip_ft_extend or {}
+	}, LuasnipFT_mt)
+end
+
+function LuasnipFT:copy()
+	return setmetatable({
+		ft_extensions = vim.deepcopy(self.ft_extensions, true)
 	}, LuasnipFT_mt)
 end
 
@@ -26,25 +32,37 @@ function LuasnipFT:append(l)
 	extend_ft_extensions(self.ft_extensions, l.ft_extensions)
 end
 
-function LuasnipFT:undo(bufnr)
-	vim.b[bufnr].luasnip_ft_extend = {}
-end
-function LuasnipFT.reset() end
-
 LuasnipFT.barrier = util.nop
-function LuasnipFT:make_applicator()
-	return self
+
+---@class Matchconfig.Extras.LuasnipFTApplicator: Matchconfig.OptionApplicator
+---@field ft_extensions table<string, string[]>
+local LuasnipFTApplicator = {}
+local LuasnipFTApplicator_mt = {__index = LuasnipFTApplicator}
+
+function LuasnipFTApplicator.new(ft_extensions)
+	return setmetatable({ft_extensions = ft_extensions}, LuasnipFTApplicator_mt)
 end
-function LuasnipFT:apply_to_barrier(i, args)
-	if i ~= 0 then
+function LuasnipFTApplicator:apply_to_barrier(i, args)
+	-- partial updates don't seem to make sense to me, only set
+	-- `luasnip_ft_extend` once.
+	if i ~= 1 then
 		return
 	end
 	vim.b[args.buf].luasnip_ft_extend = self.ft_extensions
 end
+function LuasnipFTApplicator:undo(bufnr)
+	vim.b[bufnr].luasnip_ft_extend = nil
+end
 
--- supply to luasnip.
-function LuasnipFT.ft_func()
-	local fts = require("luasnip.extras.filetype_functions").from_pos_or_filetype()
+function LuasnipFT:make_applicator()
+	return LuasnipFTApplicator.new(self.ft_extensions)
+end
+
+return {
+	new = LuasnipFT.new,
+	reset = util.nop,
+	ft_func = function()
+		local fts = require("luasnip.extras.filetype_functions").from_pos_or_filetype()
 		-- should be possible to extend `all`-filetype.
 		table.insert(fts, "all")
 		local effective_fts = {}
@@ -60,6 +78,5 @@ function LuasnipFT.ft_func()
 		end
 
 		return effective_fts
-end
-
-return LuasnipFT
+	end
+}

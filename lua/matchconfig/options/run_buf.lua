@@ -1,15 +1,29 @@
 local do_args_fn = require("matchconfig.util.actions").do_args_fn
+local util = require("matchconfig.util.util")
 
---- @class RunBuf: Option
+--- @class Matchconfig.RunBuf: Matchconfig.Option
 --- @field buf_fns fun(table)[]
---- @field undolists Undolist[]
+--- @field undolists Matchconfig.Undolist[]
 local RunBuf = {}
 local RunBuf_mt = { __index = RunBuf }
-function RunBuf.new(configs)
+
+function RunBuf.new(config)
 	return setmetatable({
-		buf_fns = {configs.run_buf},
+		buf_fns = {config.run_buf},
 		undolists = {}
 	}, RunBuf_mt)
+end
+
+function RunBuf:copy()
+	local cp = setmetatable({}, RunBuf_mt)
+	cp.buf_fns = vim.list_slice(self.buf_fns, 1, #self.buf_fns)
+	local undolists_cp = {}
+	for i, undolist in ipairs(self.undolists) do
+		undolists_cp[i] = undolist:copy()
+	end
+	cp.undolists = undolists_cp
+
+	return cp
 end
 
 function RunBuf:append_raw(t)
@@ -22,7 +36,7 @@ function RunBuf:append(rb)
 	end
 end
 
-local barrier = {}
+local barrier = util.nop
 function RunBuf:barrier()
 	table.insert(self.buf_fns, barrier)
 end
@@ -48,17 +62,17 @@ function RunBufApplicator:apply_to_barrier(_, args)
 		table.insert(self.undolists, do_args_fn(fn, args))
 	end
 end
+function RunBufApplicator:undo()
+	for _, undolist in ipairs(self.undolists) do
+		undolist:run()
+	end
+end
 
 function RunBuf:make_applicator()
 	return RunBufApplicator.new(self.buf_fns, self.undolists)
 end
 
-
-function RunBuf:undo()
-	for _, undolist in ipairs(self.undolists) do
-		undolist:run()
-	end
-end
-function RunBuf:reset() end
-
-return RunBuf
+return {
+	new = RunBuf.new,
+	reset = util.nop
+}

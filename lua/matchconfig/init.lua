@@ -2,8 +2,10 @@ local gen_config = require("matchconfig.gen_config")
 local data = require("matchconfig.session.data")
 local session = require("matchconfig.session")
 
+---@class Matchconfig.init
 local M = {}
 
+---@source session/init.lua
 function M.setup(opts)
 	session.reload_new_opts(opts)
 end
@@ -25,7 +27,7 @@ M.match_dir = gen_config.match_dir
 M.match_pattern = gen_config.match_pattern
 M.match_filetype = gen_config.match_filetype
 M.match_file = gen_config.match_file
-M.match = gen_config.match
+M.register = gen_config.register
 
 M.matchers = vim.tbl_map(function(i)
 	return i.new

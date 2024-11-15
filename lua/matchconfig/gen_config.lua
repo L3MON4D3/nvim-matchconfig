@@ -30,7 +30,8 @@ function M.load_config(fname, fail_silently)
 	return conf_table
 end
 
-function M.match(matcher, configs, opts)
+function M.register(matcher, config, opts)
+	config = config:copy()
 	local additional_tags
 	local after
 	local before
@@ -38,13 +39,6 @@ function M.match(matcher, configs, opts)
 		additional_tags = opts.tags
 		after = opts.after
 		before = opts.before
-	end
-
-	-- there is at least one config.
-	local config = as_config(configs[1])
-	for i = 2, #configs do
-		-- don't use barriers here, these are all one logical unit.
-		config:_append(as_config(configs[i]))
 	end
 
 	local mc = matchconfig.new(config, matcher, additional_tags, after, before)
@@ -60,16 +54,5 @@ function M.match(matcher, configs, opts)
 
 	return mc
 end
-
-local function match_generic(matcher_type)
-	return function(matcher_arg, ...)
-		return M.match(matcher_type.new(matcher_arg), {...})
-	end
-end
-
-M.match_dir = match_generic(builtin_matchers.dir)
-M.match_pattern = match_generic(builtin_matchers.pattern)
-M.match_filetype = match_generic(builtin_matchers.filetype)
-M.match_file = match_generic(builtin_matchers.file)
 
 return M

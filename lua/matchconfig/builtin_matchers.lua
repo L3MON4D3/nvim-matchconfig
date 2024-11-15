@@ -1,13 +1,13 @@
 local M = {}
 
---- @class BufInfo
+--- @class Matchconfig.BufInfo
 --- @field bufnr number
 --- @field fname string
 --- @field filetypes table<string, boolean>
 --- @field dir string
 
-local function make_hr(matcher_id, id, full)
-	if full then
+local function make_hr(matcher_id, id, include_matcher_id)
+	if include_matcher_id then
 		return matcher_id .. "(" ..id .. ")"
 	else
 		return id
@@ -23,12 +23,12 @@ function DirMatcher.new(dir)
 	return setmetatable({ dir = dir }, DirMatcher_mt)
 end
 
----@param bufinfo BufInfo
+---@param bufinfo Matchconfig.BufInfo
 function DirMatcher:matches(bufinfo)
 	return bufinfo.dir:sub(1, #self.dir) == self.dir
 end
-function DirMatcher:human_readable(full)
-	return make_hr(self.matcher_id, self.dir, full)
+function DirMatcher:human_readable(include_matcher_id)
+	return make_hr(self.matcher_id, self.dir, include_matcher_id)
 end
 function DirMatcher:tags()
 	return {self.matcher_id, self:human_readable(true)}
@@ -44,12 +44,12 @@ function FileMatcher.new(file)
 	return setmetatable({ file = file }, FileMatcher_mt)
 end
 
----@param bufinfo BufInfo
+---@param bufinfo Matchconfig.BufInfo
 function FileMatcher:matches(bufinfo)
 	return bufinfo.fname == self.file
 end
-function FileMatcher:human_readable(full)
-	return make_hr(self.matcher_id, self.file, full)
+function FileMatcher:human_readable(include_matcher_id)
+	return make_hr(self.matcher_id, self.file, include_matcher_id)
 end
 function FileMatcher:tags()
 	return {self.matcher_id, self:human_readable(true)}
@@ -65,12 +65,12 @@ function FiletypeMatcher.new(filetype)
 	return setmetatable({ ft = filetype }, FiletypeMatcher_mt)
 end
 
----@param bufinfo BufInfo
+---@param bufinfo Matchconfig.BufInfo
 function FiletypeMatcher:matches(bufinfo)
 	return bufinfo.filetypes[self.ft] ~= nil
 end
-function FiletypeMatcher:human_readable(full)
-	return make_hr(self.matcher_id, self.ft, full)
+function FiletypeMatcher:human_readable(include_matcher_id)
+	return make_hr(self.matcher_id, self.ft, include_matcher_id)
 end
 function FiletypeMatcher:tags()
 	return {self.matcher_id, self:human_readable(true)}
@@ -86,12 +86,12 @@ function PatternMatcher.new(pattern)
 	return setmetatable({ pattern = pattern }, PatternMatcher_mt)
 end
 
----@param bufinfo BufInfo
+---@param bufinfo Matchconfig.BufInfo
 function PatternMatcher:matches(bufinfo)
 	return bufinfo.fname:match(self.pattern)
 end
-function PatternMatcher:human_readable(full)
-	return make_hr(self.matcher_id, self.pattern, full)
+function PatternMatcher:human_readable(include_matcher_id)
+	return make_hr(self.matcher_id, self.pattern, include_matcher_id)
 end
 function PatternMatcher:tags()
 	return {self.matcher_id, self:human_readable(true)}
@@ -101,18 +101,16 @@ end
 local GenericMatcher = {}
 local GenericMatcher_mt = {__index = GenericMatcher}
 
-GenericMatcher.matcher_id = "generic"
-
-function GenericMatcher.new(fn, id)
-	return setmetatable({ fn = fn, id = id }, GenericMatcher_mt)
+function GenericMatcher.new(fn, id, matcher_id)
+	return setmetatable({ fn = fn, id = id, matcher_id = matcher_id or "generic" }, GenericMatcher_mt)
 end
 
----@param bufinfo BufInfo
+---@param bufinfo Matchconfig.BufInfo
 function GenericMatcher:matches(bufinfo)
 	return self.fn(bufinfo)
 end
-function GenericMatcher:human_readable(full)
-	return make_hr(self.matcher_id, self.id, full)
+function GenericMatcher:human_readable(include_matcher_id)
+	return make_hr(self.matcher_id, self.id, include_matcher_id)
 end
 function GenericMatcher:tags()
 	return {self.matcher_id, self:human_readable(true)}

@@ -1,14 +1,21 @@
---- @class ConfigSource
+local ConfigApplicator = require("matchconfig.primitives.config_applicator")
+
+--- @class Matchconfig.ConfigSource
 --- @field type string
 --- @field fname string
 --- @field id string
 
---- @class Config
---- @field options Option[]
---- @field sources ConfigSource[]
+--- @class Matchconfig.Config
+--- @field options Matchconfig.Option[]
+--- @field sources Matchconfig.ConfigSource[]
 --- @field n_barriers number How many barriers do the options have at most.
 local Config = {}
-local Config_mt = {__index = Config}
+local Config_mt = {
+	__index = Config,
+	__concat = function(a,b)
+		return a:append(b)
+	end
+}
 
 local session_data = require("matchconfig.session.data")
 
@@ -20,11 +27,27 @@ function Config.new(t)
 
 	return setmetatable({
 		options = options,
-		category = t.category,
 		sources = {},
 		n_barriers = 0
 	}, Config_mt)
 end
+
+function Config:copy()
+	local c = setmetatable({}, Config_mt)
+
+	local options = {}
+	for id, opt in pairs(self.options) do
+		options[id] = opt:copy()
+	end
+	c.options = options
+
+	-- noref=true => sources-table doesn't have cyclic fields.
+	c.sources = vim.deepcopy(self.sources, true)
+	c.n_barriers = self.n_barriers
+
+	return c
+end
+
 function Config.as_config(t_or_c)
 	if getmetatable(t_or_c) == Config_mt then
 		return t_or_c
@@ -39,21 +62,15 @@ function Config:_append_raw(t)
 	for _, opt in pairs(self.options) do
 		opt:append_raw(t)
 	end
-	if t.category then
-		self.category = t.category
-	end
 	-- facilitate function-chaining.
 	return self
 end
 
 --- Extend this config with the values from other config c.
----@param c Config
+---@param c Matchconfig.Config
 function Config:_append(c)
 	for id, opt in pairs(self.options) do
 		opt:append(c.options[id])
-	end
-	if c.category then
-		self.category = c.category
 	end
 	if c.sources then
 		vim.list_extend(self.sources, c.sources)
@@ -81,23 +98,12 @@ function Config:barrier()
 	self.n_barriers = self.n_barriers + 1
 end
 
-function Config:apply(args)
+function Config:make_applicator()
 	local applicators = {}
 	for name, opt in pairs(self.options) do
 		applicators[name] = opt:make_applicator()
 	end
-	-- lua-for is end-inclusive => don't need +1.
-	for i = 0, self.n_barriers do
-		for _, applicator in pairs(applicators) do
-			applicator:apply_to_barrier(i, args)
-		end
-	end
-end
-
-function Config:undo(bufnr)
-	for _, opt in pairs(self.options) do
-		opt:undo(bufnr)
-	end
+	return ConfigApplicator.new(applicators, self.n_barriers)
 end
 
 --- Set source for this config

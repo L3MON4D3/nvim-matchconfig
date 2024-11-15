@@ -4,6 +4,8 @@ return {
 	options = {},
 	-- configs by buffer-id and buffer-name.
 	buf_configs = {},
+	-- config-applicators by buffer-id and buffer-name.
+	buf_applicators = {},
 	-- configfile (absolute path)
 	configfile = "",
 	-- id of autocmd watching configfile

@@ -1,4 +1,4 @@
-local util = require("util")
+local file_util = require("matchconfig.util.file")
 
 local ConfigPicker = {}
 
@@ -6,7 +6,7 @@ local str_parsers = {}
 local strs = {}
 function ConfigPicker.get_parser(fname)
 	if not str_parsers[fname] then
-		strs[fname] = util.lines(fname)
+		strs[fname] = file_util.lines(fname)
 		local configs_parser = vim.treesitter.get_string_parser(strs[fname], "lua")
 		str_parsers[fname] = configs_parser
 	end

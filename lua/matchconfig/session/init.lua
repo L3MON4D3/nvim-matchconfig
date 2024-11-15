@@ -13,7 +13,12 @@ local default_opts = {
 	file = "config.lua"
 }
 
--- set user-options provided by user.
+---@class Matchconfig.SetupOpts
+---@field configfile string
+---@field options table<string, Matchconfig.Option>
+
+---Update configuration and reload.
+---@param opts Matchconfig.SetupOpts
 local function set_config_data(opts)
 	opts = opts or {}
 	opts = vim.tbl_extend("keep", opts, default_opts)
@@ -40,26 +45,27 @@ end
 
 local function set_derived_data(fail_silently)
 	data.buf_configs = autotable(2)
+	data.buf_applicators = autotable(2)
 	-- fail silently.
 	data.matchconfigs = require("matchconfig.gen_config").load_config(data.configfile, fail_silently)
 end
 
 -- args: must contain args.buf, the bufnr, and args.file, the filename.
 function M.load_buf_config(args)
-	if data.buf_configs[args.buf][args.file] then
+	local bufnr = args.buf
+	local bufname = args.file
+
+	if data.buf_configs[bufnr][bufname] then
 		-- already executed for this buffer, do nothing.
 		return
 	end
 
-	local bufnr = args.buf
-	local bufname = args.file
-	local f_conf = data.buf_configs[bufnr][bufname]
-	if not f_conf then
-		f_conf = make_buf_config(bufnr, data.matchconfigs)
-		data.buf_configs[bufnr][bufname] = f_conf
-	end
+	local f_conf = make_buf_config(bufnr, data.matchconfigs)
+	local conf_applicator = f_conf:make_applicator()
+	data.buf_configs[bufnr][bufname] = f_conf
+	data.buf_applicators[bufnr][bufname] = conf_applicator
 
-	f_conf:apply(args)
+	conf_applicator:apply(args)
 end
 
 -- call before everything else.
@@ -70,13 +76,16 @@ end
 
 -- undo config of all buffers we had loaded config for.
 local function unload()
-	for bufnr, nr_configs in pairs(data.buf_configs) do
-		for _, config in pairs(nr_configs) do
+	for bufnr, bufnr_configs in pairs(data.buf_applicators) do
+		for _, config_applicator in pairs(bufnr_configs) do
 			if vim.api.nvim_buf_is_loaded(bufnr) then
 				-- only undo for valid buffers.
-				config:undo(bufnr)
+				config_applicator:undo(bufnr)
 			end
 		end
+	end
+	for _, opt in pairs(data.options) do
+		opt:reset()
 	end
 end
 
