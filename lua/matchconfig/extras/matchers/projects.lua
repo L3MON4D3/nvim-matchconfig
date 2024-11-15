@@ -4,8 +4,6 @@ local framework_id_fns = {
 	end,
 }
 
-
-
 local M = {}
 
 for framework, id_fn in pairs(framework_id_fns) do
