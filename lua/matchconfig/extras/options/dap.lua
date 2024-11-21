@@ -47,6 +47,9 @@ function DapApplicator:apply_to_barrier(j, args)
 	local dap = require("dap")
 	local config_list = {}
 	for _, v in pairs(self.type_configs) do
+		if type(v) == "function" then
+			v = v(args)
+		end
 		table.insert(config_list, v)
 	end
 
