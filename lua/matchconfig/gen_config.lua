@@ -1,6 +1,4 @@
 local stack_util = require("matchconfig.util.callstack")
-local as_config = require("matchconfig.primitives.config").as_config
-local builtin_matchers = require("matchconfig.builtin_matchers")
 local matchconfig = require("matchconfig.primitives.matchconfig")
 
 local M = {}
