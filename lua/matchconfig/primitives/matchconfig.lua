@@ -3,7 +3,7 @@ local util = require("matchconfig.util.util")
 local Matchconfig = {}
 local Matchconfig_mt = {__index = Matchconfig}
 
-function Matchconfig.new(config, matcher, tags, after, before)
+function Matchconfig.new(config, matcher, tags)
 	local effective_tags = matcher:tags()
 	vim.list_extend(effective_tags, tags or {})
 	return setmetatable({
@@ -11,9 +11,9 @@ function Matchconfig.new(config, matcher, tags, after, before)
 		matcher = matcher,
 		tags = effective_tags,
 		-- what configs to run this after
-		_after = after and util.list_to_set(after) or util.empty,
+		_after = util.empty,
 		-- what configs to run this before
-		_before = before and util.list_to_set(before) or util.empty
+		_before = util.empty,
 	}, Matchconfig_mt)
 end
 

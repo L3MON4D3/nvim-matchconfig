@@ -32,16 +32,9 @@ end
 
 function M.register(matcher, config, opts)
 	config = config:copy()
-	local additional_tags
-	local after
-	local before
-	if opts then
-		additional_tags = opts.tags
-		after = opts.after
-		before = opts.before
-	end
+	local additional_tags = opts and opts.tags
 
-	local mc = matchconfig.new(config, matcher, additional_tags, after, before)
+	local mc = matchconfig.new(config, matcher, additional_tags)
 
 	local global_config_fn_level = stack_util.stack_fenv_get_marked_level(config_list_name)
 	local config_list = getfenv(global_config_fn_level)[config_list_name]
