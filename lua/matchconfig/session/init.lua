@@ -9,8 +9,8 @@ local make_buf_config = require("matchconfig.make_buf_config")
 local M = {}
 
 local default_opts = {
-	options = require("matchconfig.options"),
-	file = "config.lua"
+	options = {require("matchconfig.options.run_buf")},
+	path = "config.lua"
 }
 
 ---@class Matchconfig.SetupOpts
@@ -84,7 +84,7 @@ local function unload()
 			end
 		end
 	end
-	for _, opt in pairs(data.options) do
+	for _, opt in ipairs(data.options) do
 		opt:reset()
 	end
 end

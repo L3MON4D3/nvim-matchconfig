@@ -1,6 +1,6 @@
 -- dummy-values, valid values are set in `session.initialize` during plugin/matchconfig.lua
 return {
-	-- all enabled options
+	-- all enabled options, sorted
 	options = {},
 	-- configs by buffer-id and buffer-name.
 	buf_configs = {},

@@ -13,15 +13,15 @@ function ConfigApplicator.new(option_applicators, n_barriers)
 	}, ConfigApplicator_mt)
 end
 function ConfigApplicator:apply(args)
-	for i = 1, self.n_barriers+1 do
-		for _, applicator in pairs(self.option_applicators) do
+	for i = 1, self.n_barriers do
+		for _, applicator in ipairs(self.option_applicators) do
 			applicator:apply_to_barrier(i, args)
 		end
 	end
 end
 
 function ConfigApplicator:undo(bufnr)
-	for _, applicator in pairs(self.option_applicators) do
+	for _, applicator in ipairs(self.option_applicators) do
 		applicator:undo(bufnr)
 	end
 end
