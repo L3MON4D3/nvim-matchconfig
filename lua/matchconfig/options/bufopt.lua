@@ -7,7 +7,7 @@ local BufOpt = {}
 local BufOpt_mt = { __index = BufOpt }
 
 local function get_buf_opt(config_raw)
-	local opts = config_raw.buf_opt or {}
+	local opts = config_raw.buf_opts or {}
 	for optname, _ in pairs(opts) do
 		local ok, _ = pcall(function()
 			return vim.bo[optname]
