@@ -1,6 +1,7 @@
 --- @class Matchconfig.ConfigApplicator
 --- @field option_applicators Matchconfig.OptionApplicator[]
 --- @field n_barriers number How many barriers do the options have at most.
+--- @field barrier_args any[] arguments up to some barrier.
 local ConfigApplicator = {}
 local ConfigApplicator_mt = {
 	__index = ConfigApplicator,

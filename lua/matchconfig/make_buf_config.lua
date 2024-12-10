@@ -36,9 +36,13 @@ local function gen_buf_config(buf, configs)
 	}
 
 	local matching_configs = {}
+	local matches_data = {}
 	for _, mc in ipairs(configs) do
-		if mc:matches(bufinfo) then
+		local match_data = mc:matches(bufinfo)
+		if match_data then
 			table.insert(matching_configs, mc)
+			-- store matcher-result for matchconfig.
+			matches_data[mc] = match_data
 		end
 	end
 
@@ -86,9 +90,9 @@ local function gen_buf_config(buf, configs)
 
 	-- return empty config if there is no matching config.
 	local config = new_config({})
-	for _, app_conf in ipairs(sorted) do
-		config:barrier()
+	for _, app_conf in ipairs(sorted_whitelisted) do
 		config:append(app_conf.config)
+		config:barrier(matches_data[app_conf])
 	end
 
 	return config

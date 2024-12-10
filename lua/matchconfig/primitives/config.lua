@@ -9,6 +9,8 @@ local ConfigApplicator = require("matchconfig.primitives.config_applicator")
 --- @field options Matchconfig.Option[]
 --- @field sources Matchconfig.ConfigSource[]
 --- @field n_barriers number How many barriers do the options have at most.
+--- @field barrier_args any[] maps barrier-number to arguments applied to
+---                           configs before it.
 local Config = {}
 local Config_mt = {
 	__index = Config,
@@ -28,7 +30,8 @@ function Config.new(t)
 	return setmetatable({
 		options = options,
 		sources = {},
-		n_barriers = 0
+		n_barriers = 0,
+		barrier_args = {}
 	}, Config_mt)
 end
 
@@ -44,6 +47,7 @@ function Config:copy()
 	-- noref=true => sources-table doesn't have cyclic fields.
 	c.sources = vim.deepcopy(self.sources, true)
 	c.n_barriers = self.n_barriers
+	c.barrier_args = vim.deepcopy(self.barrier_args)
 
 	return c
 end
@@ -91,17 +95,18 @@ function Config:append(t_or_c)
 	return self
 end
 
-function Config:barrier()
+function Config:barrier(barr_args)
 	for _, opt in ipairs(self.options) do
 		opt:barrier()
 	end
 	self.n_barriers = self.n_barriers + 1
+	self.barrier_args[self.n_barriers] = barr_args
 end
 
 function Config:make_applicator()
 	local applicators = {}
 	for name, opt in ipairs(self.options) do
-		applicators[name] = opt:make_applicator()
+		applicators[name] = opt:make_applicator(self.barrier_args)
 	end
 	return ConfigApplicator.new(applicators, self.n_barriers)
 end
