@@ -1,121 +1,140 @@
 # nvim-matchconfig
 
-The goal of this neovim-plugin is to make project-dependent settings as simple
-as possible.  
+The goal of this neovim-plugin is to implement project-dependent settings in a
+feature-complete and flexible manner.
 
-## Introduction
-The core of this plugin is the `Matchconfig`. It contains a `Matcher`, which
-determines whether the `Matchconfig` matches a buffer, and a `Config`, which
-is made up out of different `Options`, each of which can be applied to a buffer.  
-All `Matchconfig`s are loaded from one file, by default `configs.lua` in the
-`stdpath("config")`-directory (the filename can be modified in `setup()`).  
-The following call would register a new `Matchconfig` which matches all buffers
-with filetype `python`, and uses the `run_buf`-option to print a message upon
-loading the config to the buffer.
+Relevant features:
+* Declaratively define options (not just buffer-local or global
+  `vim.opt`-options, but any arbitrary code that changes a buffers state) that
+  should be applied to some buffer based on predicates (filename matches some
+  pattern, or file is inside some directory), their order (override less
+  specific options with more specific ones) and how they are merged when there
+  are collisions (for example the last provided value of an option has priority,
+  or all values are somehow combined)
+* Quickly edit currently-loaded options (jump to options that apply to the
+  current buffer, and, upon changing them, discard the old options and load the
+  new options)
+* The set of options that can be defined for a buffer is not set in stone but
+  can be supplanted by user-defined options.
+
+## Example
+
+The following code shows a few of the basic concepts of matchconfig:
+
 ```lua
-matchconfig.match(matchers.filetype("python"), {{
-    run_buf = function()
-        print("Hello from nvim-matchconfig")
+local matchconfig = require("matchconfig")
+local matchers = matchconfig.matchers
+local extra_matchers = require("matchconfig.extras.matchers.projects")
+
+local c = matchconfig.config
+local actions = matchconfig.actions
+
+local nnoremapsilent_buf = actions.nnoremapsilent_buf
+local usercommand_buf = actions.usercommand_buf
+
+-- For all buffers that belong to a cmake-project, register a keybinding for
+-- running `make build`.
+-- Note that ideally, this would be improved by using some repl-plugin for more
+-- interactivity.
+local cmake_generic = matchconfig.register(extra_matchers.cmake(), c{
+    run_buf = function(args)
+        -- nnoremapsilent_buf registers a buffer-local keybinding that can be
+        -- removed upon reload.
+        -- for the cmake-matcher, args.match_args is the directory where the
+        -- Makefile resides.
+        nnoremapsilent_buf("<Space>b", ":!cd " .. args.match_args .. " && cmake --build build<Cr>")
     end
-}})
+})
+
+-- this time, register a keybinding on the same key-combo for Makefile-projects.
+local make_generic = matchconfig.register(extra_matchers.make(), c{
+    run_buf = function(args)
+        nnoremapsilent_buf("<Space>b", ":!cd " .. args.match_args .. " && make build<Cr>")
+    end
+})
+
+-- make sure that (arbitrarily) the make-binding supersedes the cmake-binding.
+-- So in projects that have both a CMakeLists.txt and a Makefile, <space>b would
+-- run `make build`.
+cmake_generic:after(make_generic)
+
+-- for filenames that match README.md$ or DOC.md$, register two usercommands,
+-- `:Gr` and `:S`, for starting and stopping a grip-server
+-- (https://github.com/joeyespo/grip).
+matchconfig.register(matchers.pattern("README.md$") + matchers.pattern("DOC.md$"), c{
+    run_buf = function(args)
+        usercommand_buf("Gr", function()
+            local socket = require("socket")
+            local server = socket.bind("*", 0)
+            local _, port = server:getsockname()
+            server:close()
+
+            io.popen(
+                "systemd-run --user -u $(systemd-escape grip_" .. args.file .. ") " ..
+                "grip -b " .. args.file .. " " .. port .. " 2> /dev/null")
+        end, {})
+        usercommand_buf("S", function()
+            io.popen(
+                "systemctl --user stop $(systemd-escape grip_" .. args.file .. ")")
+        end, {})
+    end
+})
 ```
-There are several matchers, including one that invokes a lua-callback, so
-there is lots of flexibility in matching configurations to buffers.  
-The second part of a `Matchconfig` is the `Config`. It will receive the table
-containing the `run_buf`-key, and construct all enabled options from it.  
-Options can be added or disabled in `setup()`. This includes those shipped in
-`matchconfig`, but also ones you may define yourself, which means that there is
-a great amount of flexibility in what kind of changes `nvim-matchconfig` can do
-to your buffer.  
-Since multiple `Matchconfig`s can match a buffer, it may be desired to impose
-some kind of ordering (for example, to overwrite a keymap set by another
-`Matchconfig` without disabling it entirely). We support this via two functions,
-`:after` and `:before`:
-```lua
-local h1 = matchconfig.match(matchers.filetype("python"), {{
-    run_buf = function()
-        print("Hello 1")
-    end
-}})
 
-local h2 = matchconfig.match(matchers.filetype("python"), {{
-    run_buf = function()
-        print("Hello 2")
-    end
-}})
+And the short session below shows the hot-reload and editing capabilities of
+`nvim-matchconfig` with the config shown above:
 
-local h3 = matchconfig.match(matchers.filetype("python"), {{
-    run_buf = function()
-        print("Hello 3")
-    end
-}})
+https://github.com/user-attachments/assets/260f21ff-f769-4ef2-913d-f39a6407f719
 
-h1:before(h2)
-h3:after(h2)
-```
-In this case, upon opening a python-file, the messages will be in the desired
-order (1 -> 2 -> 3).  
-
-One last important feature of `nvim-matchconfig` is its hot-reload capability:
-if the file that defines the `Matchconfig`s is written, all active `Config`s are
-undone (if they are set up correctly), the new `Matchconfig`s are loaded and
-applied to all open buffers.
+Note the following things:
+* `:C` opens a telescope-based picker for all options loaded for the current
+  buffer.
+* After changing the `Makefile`-matching `run_buf` for the first time, the old
+  keybinding is removed and the new one (`make build_debug`) is registered.
+  When the `nnoremapsilent_buf` is commented out, no keybinding exists for
+  `<space>b`.
+* `pick_current` only shows the most up-to-date information and no older,
+  no-longer effective options.
 
 ## Getting Started
 0. Make sure you're running Neovim version 0.10+.
-1. Install using your favorite package-manager.
+1. Install `nvim-matchconfig` using your favorite package-manager.
    Optionally follow a specific version (we adhere to semantic versioning) by
    providing a tag.
-2. Query your config-path via `:lua =vim.fn.stdpath("config")` and create the
-   file `config.lua`, and start adding configs. For a quick check that
-   everything works correctly, try the following:
+2. Find your config-directory via `:lua =vim.fn.stdpath("config")` (very, very
+   likely this is `~/.config/nvim`) and create the file `config.lua` in it. For
+   a quick check that everything works correctly, try the following:
    ```lua
-   local matchconfig = require("matchconfig")
-   local matchers = matchconfig.matchers
+    local matchconfig = require("matchconfig")
+    local matchers = matchconfig.matchers
+    local c = matchconfig.config
 
-   matchconfig.match(matchers.filetype("python"), {{
-       run_buf = function()
-           print("Hello from nvim-matchconfig")
-       end
-   }})
+    matchconfig.register(matchers.filetype("python"), c{
+        run_buf = function()
+            print("Hello from nvim-matchconfig")
+        end
+    })
    ```
-   You should now see the short message upon opening a python-file.
+   You should now see a short message upon opening a python-file.
+3. Define your own configs.  Reading the remainder of this README and DOC.md
+   should give you some solid ideas on how to use `nvim-matchconfig` and what it
+   is capable of.
 
-There are multiple types of matchers:
-* path
-* directory
-* pattern
-* filetype
-* generic
-The first three look at the filename of the buffer, and match if the path is
-exactly the same, the filename is somewhere below the specified directory, or
-if the lua-pattern matches the filename.  
-`filetype` matches if the buffer has the specified filetype, and `generic` takes
-a lua-callback and is passed information on the buffer, and then decides whether
-the buffer matches.
-* Flexibly match configurations to a buffer as it's opened.  
-  We natively support
-  * Path
-  * Directory
-  * Pattern
-  * Filetype
-  * Combinations of those (ie. directory `/a/b` and filetype `markdown`) And
-    also generic functions that return whether they match some given buffer, for
-    customizability.
-* `matchonfig` supports hot reload (eg. when the configuration is updated, the
-  configurations of all open buffers will be re-derived from it), and if
-  `matchconfig` knows about the various changes done by the current
-  configuration of a buffer (for example when keybindings or user-commands are
-  setup using our wrappers around them), these can be undone as part of that
-  reload, so that old settings don't survive.
-* To make hot reload really comfortable, all configurations applying to some
-  buffer can be listed and jumped to via
-  [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
-* The order in which the various configurations that match some buffer are
-  applied can be controlled, which enables overwriting of general settings with
-  more granular ones.
-
-## How-To
+## Configuring
+`nvim-matchconfig` can be configured using a `setup`-function:
 ```lua
-require("matchconfig").setup({ fname = "<absolute path to config-file>" })
+require("matchconfig").setup({
+    path = "config.lua",
+    options = {
+        require("matchconfig.options.run_buf")
+        require("matchconfig.options.run_session")
+    }
+})
 ```
+More information on `setup` and its various keys can be found in
+DOC.md in the chapter `API-Setup`.
+
+## Other Resources on `nvim-matchconfig`
+
+The chapter `Tips` in DOC.md has suggestions for a good workflow with
+`nvim-matchconfig` as well as mappings and commands that may come in handy.
