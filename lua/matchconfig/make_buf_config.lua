@@ -65,6 +65,25 @@ local function gen_buf_config(buf, configs)
 		error("There is a cycle in your config-ordering! The cycle is contained in " .. digraph:describe())
 	end
 
+	local sorted_whitelisted = {}
+
+	for i = 1, #sorted do
+		local mc = sorted[i]
+		local whitelisted = true
+		-- whitelisted-status is only influenced by higher-priority mc => only
+		-- iterate over these.
+		for j = i+1, #sorted do
+			if sorted[j]:blacklists(mc) then
+				whitelisted = false
+			elseif sorted[j]:unblacklists(mc) then
+				whitelisted = true
+			end
+		end
+		if whitelisted then
+			table.insert(sorted_whitelisted, mc)
+		end
+	end
+
 	-- return empty config if there is no matching config.
 	local config = new_config({})
 	for _, app_conf in ipairs(sorted) do

@@ -14,6 +14,13 @@ function Matchconfig.new(config, matcher, tags)
 		_after = util.empty,
 		-- what configs to run this before
 		_before = util.empty,
+
+		-- which configs should be disabled, and which re-enabled.
+		_blacklist = util.empty,
+		_unblacklist = util.empty,
+
+		_blacklist_by = util.empty,
+		_unblacklist_by = util.empty,
 	}, Matchconfig_mt)
 end
 
@@ -35,6 +42,85 @@ function Matchconfig:after(other)
 	else
 		self._after[other] = true
 	end
+end
+
+-- blacklist and unblacklist imply that this mc is run after the other mc
+-- (blacklisting implies higher priority)
+function Matchconfig:blacklist(other_or_tag)
+	self:after(other_or_tag)
+	if self._blacklist == util.empty then
+		self._blacklist = {[other_or_tag] = true}
+	else
+		self._blacklist[other_or_tag] = true
+	end
+end
+function Matchconfig:unblacklist(other_or_tag)
+	self:after(other_or_tag)
+	if self._unblacklist == util.empty then
+		self._unblacklist = {[other_or_tag] = true}
+	else
+		self._unblacklist[other_or_tag] = true
+	end
+end
+
+function Matchconfig:blacklist_by(other_or_tag)
+	self:before(other_or_tag)
+	if self._blacklist_by == util.empty then
+		self._blacklist_by = {[other_or_tag] = true}
+	else
+		self._blacklist_by[other_or_tag] = true
+	end
+end
+function Matchconfig:unblacklist_by(other_or_tag)
+	self:before(other_or_tag)
+	if self._unblacklist_by == util.empty then
+		self._unblacklist_by = {[other_or_tag] = true}
+	else
+		self._unblacklist_by[other_or_tag] = true
+	end
+end
+
+function Matchconfig:blacklists(other)
+	if self._blacklist[other] then
+		return true
+	end
+	if other._blacklist_by[self] then
+		return true
+	end
+
+	for _, tag in ipairs(other.tags) do
+		if self._blacklist[tag] then
+			return true
+		end
+	end
+	for _, tag in ipairs(self.tags) do
+		if other._blacklist_by[tag] then
+			return true
+		end
+	end
+
+	return false
+end
+function Matchconfig:unblacklists(other)
+	if self._unblacklist[other] then
+		return true
+	end
+	if other._unblacklist_by[self] then
+		return true
+	end
+
+	for _, tag in ipairs(other.tags) do
+		if self._unblacklist[tag] then
+			return true
+		end
+	end
+	for _, tag in ipairs(self.tags) do
+		if other._unblacklist_by[tag] then
+			return true
+		end
+	end
+
+	return false
 end
 
 -- return whether `self` should run after `other` (ie. override it).
