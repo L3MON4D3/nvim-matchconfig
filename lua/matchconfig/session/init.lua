@@ -50,10 +50,10 @@ local function set_derived_data(fail_silently)
 	data.matchconfigs = require("matchconfig.gen_config").load_config(data.configfile, fail_silently)
 end
 
--- args: must contain args.buf, the bufnr, and args.file, the filename.
-function M.load_buf_config(args)
-	local bufnr = args.buf
-	local bufname = args.file
+-- args: must contain only args.buf, the bufnr, and args.file, the filename.
+function M.load_buf_config(load_args)
+	local bufnr = load_args.buf
+	local bufname = load_args.file
 
 	if data.buf_configs[bufnr][bufname] then
 		-- already executed for this buffer, do nothing.
@@ -65,7 +65,7 @@ function M.load_buf_config(args)
 	data.buf_configs[bufnr][bufname] = f_conf
 	data.buf_applicators[bufnr][bufname] = conf_applicator
 
-	conf_applicator:apply(args)
+	conf_applicator:apply(load_args)
 end
 
 -- call before everything else.
