@@ -23,13 +23,13 @@ end
 local undo_callbacks_name = "__action_undo"
 local bufnr_name = "__action_bufnr"
 -- args like the argument passed to autocmd-callback.
-local function do_args_fn(fn, args)
+local function do_args_fn(fn, args, ...)
 	local undolist = Undolist.new()
 	setfenv(fn, setmetatable({
 		[undo_callbacks_name] = undolist,
 		[bufnr_name] = args.buf,
 	}, {__index = _G}))
-	fn(args)
+	fn(args, ...)
 	return undolist
 end
 
