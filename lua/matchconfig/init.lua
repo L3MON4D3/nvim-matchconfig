@@ -32,5 +32,6 @@ M.register = gen_config.register
 M.matchers = vim.tbl_map(function(i)
 	return i.new
 end, require("matchconfig.builtin_matchers"))
+M.log = require("matchconfig.util.log")
 
 return M
