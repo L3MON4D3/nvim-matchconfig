@@ -56,4 +56,41 @@ function M.id_map(t)
 	return t2
 end
 
+-- keys are simple table, not like in vim.tbl_get.
+function M.set(t, key_list, v)
+	for i = 1, #key_list-1 do
+		local next_t = t[key_list[i]]
+		if type(next_t) ~= "table" then
+			t[key_list[i]] = {}
+			next_t = t[key_list[i]]
+		end
+		t = next_t
+	end
+	t[key_list[#key_list]] = v
+end
+
+function M.get(t, key_list)
+	return vim.tbl_get(t, unpack(key_list))
+end
+
+local function do_recursive(t, keys, fn)
+	-- will be overwritten immediately.
+	table.insert(keys, "dummy_val")
+	for k, v in pairs(t) do
+		keys[#keys] = k
+		local recurse = fn(t, keys, v)
+		-- update in case fn changed the value.
+		v = t[k]
+		if recurse and type(v) == "table" then
+			do_recursive(v, keys, fn)
+		end
+	end
+	keys[#keys] = nil
+end
+
+-- fn returns whether to recurse into the subtree.
+function M.tbl_do(t, fn)
+	do_recursive(t, {}, fn)
+end
+
 return M
