@@ -28,14 +28,24 @@ local function set_config_data(opts)
 	data.options = opts.options
 
 	data.configfile_watcher_id = vim.api.nvim_create_autocmd({"BufWritePost"}, {
-		callback = function()
-			-- notify config_picker that the file changed and the parser needs
-			-- to be reloaded.
-			require("matchconfig.config_picker").reset(data.configfile)
-			-- don't fail silently.
-			M.reload_same_opts(false)
+		callback = function(args)
+			-- resolve realpaths here, at runtime.
+			-- If we resolved the configfile-realpath on startup, it may not
+			-- exist yet and thus realpath would complain about trying to
+			-- resolve a non-existing path.
+			-- So, just do it here, where nothing happens if the path does not
+			-- exist, and we reload if it does (and args.file matches it).
+			local ok1, cb_realpath = pcall(vim.uv.fs_realpath, args.file)
+			local ok2, configfile_realpath = pcall(vim.uv.fs_realpath, data.configfile)
+			if ok1 and ok2 and cb_realpath == configfile_realpath then
+				-- notify config_picker that the file changed and the parser needs
+				-- to be reloaded.
+				require("matchconfig.config_picker").reset(data.configfile)
+				-- don't fail silently.
+				M.reload_same_opts(false)
+			end
 		end,
-		pattern = data.configfile
+		pattern = "*"
 	})
 end
 -- undo things done in set_config.

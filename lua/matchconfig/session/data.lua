@@ -6,7 +6,7 @@ return {
 	buf_configs = {},
 	-- config-applicators by buffer-id and buffer-name.
 	buf_applicators = {},
-	-- configfile (absolute path)
+	-- configfile (absolute path, not a realpath)
 	configfile = "",
 	-- id of autocmd watching configfile
 	configfile_watcher_id = 0,
