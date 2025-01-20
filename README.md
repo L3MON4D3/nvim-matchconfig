@@ -22,6 +22,7 @@ Relevant features:
 The following code shows a few of the basic concepts of matchconfig:
 
 ```lua
+-- Setup some local variables
 local matchconfig = require("matchconfig")
 local matchers = matchconfig.matchers
 local extra_matchers = require("matchconfig.extras.matchers.projects")
@@ -33,7 +34,7 @@ local nnoremapsilent_buf = actions.nnoremapsilent_buf
 local usercommand_buf = actions.usercommand_buf
 
 -- For all buffers that belong to a cmake-project, register a keybinding for
--- running `make build`.
+-- running `cmake --build build`.
 -- Note that ideally, this would be improved by using some repl-plugin for more
 -- interactivity.
 local cmake_generic = matchconfig.register(extra_matchers.cmake(), c{
@@ -46,7 +47,8 @@ local cmake_generic = matchconfig.register(extra_matchers.cmake(), c{
     end
 })
 
--- this time, register a keybinding on the same key-combo for Makefile-projects.
+-- this time, register a keybinding on the same key-combo as before, but for
+-- Makefile-based projects.
 local make_generic = matchconfig.register(extra_matchers.make(), c{
     run_buf = function(args)
         nnoremapsilent_buf("<Space>b", ":!cd " .. args.match_args .. " && make build<Cr>")
@@ -60,7 +62,8 @@ cmake_generic:after(make_generic)
 
 -- for filenames that match README.md$ or DOC.md$, register two usercommands,
 -- `:Gr` and `:S`, for starting and stopping a grip-server
--- (https://github.com/joeyespo/grip).
+-- (https://github.com/joeyespo/grip), which can render markdown as it appears
+-- on github.
 matchconfig.register(matchers.pattern("README.md$") + matchers.pattern("DOC.md$"), c{
     run_buf = function(args)
         usercommand_buf("Gr", function()
