@@ -1,4 +1,5 @@
 local log = require("matchconfig.util.log").new("lsp-pool")
+local util = require("matchconfig.util.util")
 
 --- @class Matchconfig.LspClientPool
 --- @field client_ids integer[] ids of all known clients
@@ -51,7 +52,8 @@ function LspClientPool:attach_matching(bufnr, config)
 	end
 
 	log.info("starting new client for client-name %s with config %s", config.name, vim.inspect(config))
-	local client_id = vim.lsp.start_client(config)
+	-- simulate old start_client behaviour.
+	local client_id = vim.lsp.start(config, {reuse_client = util.no, attach = false})
 	if not client_id then
 		error("vim.lsp.start_client did not return an id!")
 	end
