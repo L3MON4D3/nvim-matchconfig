@@ -4,32 +4,10 @@ local eval_util = require("matchconfig.options.util.eval")
 
 local merge = require("matchconfig.options.util.merge")
 
-local do_args_fn = require("matchconfig.util.actions").do_args_fn
-local actions = require("matchconfig.util.actions")
-local log = require("matchconfig.util.log").new("lsp")
-
 --- @class Matchconfig.LSP: Matchconfig.Option
 --- @field lsp_specs table[]
 local LSP = {}
 local LSP_mt = { __index = LSP }
-
-local function do_recursive(t, fn)
-	for k, v in pairs(t) do
-		local recurse = fn(t,k,v)
-		if type(t[k]) == "table" then
-			do_recursive(t[k], fn)
-		end
-	end
-end
-
-local function fstring_fn(str)
-	local eval_str = "return [[" .. str:gsub("%{", "]] .. "):gsub("%}", " .. [[") .. "]]"
-	return loadstring(eval_str)
-end
-local function fstring_fn_eval(fn, args)
-	setfenv(fn, {args = args, vim = vim})
-	return fn()
-end
 
 local function get_lsp_spec(config_raw)
 	local spec = vim.deepcopy(config_raw.lsp)
@@ -63,15 +41,16 @@ end
 
 ---@class Matchconfig.LSPApplicator: Matchconfig.OptionApplicator
 ---@field lsp_specs table[]
----@field attached_clients table<integer, integer[]> map bufnr to clients attached to buffer.
+---@field attached_clients Matchconfig.LspClientExt[] list of clients attached by this applicator.
 ---@field barrier_args any[]
+---@field bufnr integer store bufnr to restore with.
+---@field
 local LSPApplicator = {}
 local LSPApplicator_mt = {__index = LSPApplicator}
 function LSPApplicator.new(lsp_specs, barrier_args)
 	return setmetatable({
 		lsp_specs = lsp_specs,
 		barrier_args = barrier_args,
-		-- map bufnr to list of client-ids.
 		attached_clients = {}
 	}, LSPApplicator_mt)
 end
@@ -84,17 +63,6 @@ end
 local default_capabilities = vim.lsp.protocol.make_client_capabilities()
 
 local lsp_client_pool = require("matchconfig.options.util.lsp_client_pool").new()
-
-local function restore_on_edit(bufnr, client_id)
-	vim.api.nvim_buf_attach(bufnr, false, {
-		on_detach = function()
-			vim.schedule(function()
-				vim.lsp.buf_attach_client(bufnr, client_id)
-				restore_on_edit(bufnr, client_id)
-			end)
-		end
-	})
-end
 
 function LSPApplicator:apply_to_barrier(call_b_idx, args)
 	if call_b_idx ~= 1 then
@@ -155,7 +123,7 @@ function LSPApplicator:apply_to_barrier(call_b_idx, args)
 		end)
 	end
 
-	local client_ids = {}
+	local clients = {}
 	for lsp_name, lsp_spec in pairs(specs_merged) do
 		lsp_spec.name = lsp_name
 
@@ -163,21 +131,39 @@ function LSPApplicator:apply_to_barrier(call_b_idx, args)
 			assert(type(v) ~= "function", "lsp-config may not contain a function, please check " .. vim.inspect(keys_abs) .. " for a function-value")
 		end)
 
-		local client_id = lsp_client_pool:attach_matching(args.buf, lsp_spec)
+		local client = lsp_client_pool:attach_matching(args.buf, lsp_spec)
 		-- currently, all clients are detached on :edit, make sure we correctly
 		-- reattach after.
-		restore_on_edit(args.buf, client_id)
-		table.insert(client_ids, client_id)
+		table.insert(clients, client)
 	end
-	self.attached_clients[args.buf] = client_ids
+
+	self.attached_clients = clients
+	self.bufnr = args.buf
+	self.run_restore_connection = true
+	self:setup_restore_connection_on_detach()
+end
+
+function LSPApplicator:setup_restore_connection_on_detach()
+	vim.api.nvim_buf_attach(self.bufnr, false, {
+		on_detach = function()
+			vim.schedule(function()
+				if not self.run_restore_connection then
+					return
+				end
+				for _, client in ipairs(self.attached_clients) do
+					client:restore_connection(self.bufnr)
+				end
+				self:setup_restore_connection_on_detach()
+			end)
+		end
+	})
 end
 
 function LSPApplicator:undo(_)
-	for bufnr, client_ids in pairs(self.attached_clients) do
-		for _, client_id in ipairs(client_ids) do
-			vim.lsp.buf_detach_client(bufnr, client_id)
-		end
+	for _, client in ipairs(self.attached_clients) do
+		client:detach_buf(self.bufnr)
 	end
+	self.run_restore_connection = false
 end
 
 function LSP:make_applicator(barrier_args)
