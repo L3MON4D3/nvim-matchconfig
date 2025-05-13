@@ -108,7 +108,13 @@ end
 function LspClientExt:add_workspace(root_dir, settings)
 	self.settings_by_root_dir[root_dir] = settings
 
-	self:client():_add_workspace_folder(root_dir)
+	-- this may be called when a server wtih enable_per_workspace_config is
+	-- reused.
+	-- Since the server always has the initial_root_dir active, we don't add it
+	-- specially here.
+	if root_dir ~= self.initial_root_dir then
+		self:client():_add_workspace_folder(root_dir)
+	end
 end
 
 ---@private
@@ -228,7 +234,9 @@ end
 
 function LspClientExt:remove_workspace(root_dir)
 	self.settings_by_root_dir[root_dir] = nil
-	if self.enable_per_workspace_config then
+	-- initial_root_dir is not added as a workspace_folder, so don't invoke the
+	-- nvim api for that.
+	if self.enable_per_workspace_config and root_dir ~= self.initial_root_dir then
 		self:client():_remove_workspace_folder(root_dir)
 	end
 end
