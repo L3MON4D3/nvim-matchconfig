@@ -22,6 +22,7 @@ end
 
 M.config = require("matchconfig.primitives.config").new
 M.actions = require("matchconfig.util.actions")
+M.eval = require("matchconfig.options.util.eval").new
 
 M.match_dir = gen_config.match_dir
 M.match_pattern = gen_config.match_pattern
