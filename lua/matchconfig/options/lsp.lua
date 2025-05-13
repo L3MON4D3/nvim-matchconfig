@@ -132,15 +132,17 @@ function LSPApplicator:apply_to_barrier(call_b_idx, args)
 		end)
 
 		local client = lsp_client_pool:attach_matching(args.buf, lsp_spec)
-		-- currently, all clients are detached on :edit, make sure we correctly
-		-- reattach after.
 		table.insert(clients, client)
 	end
 
 	self.attached_clients = clients
 	self.bufnr = args.buf
 	self.run_restore_connection = true
-	self:setup_restore_connection_on_detach()
+	if #clients > 0 then
+		-- currently, all clients are detached on :edit, make sure we correctly
+		-- reattach after.
+		self:setup_restore_connection_on_detach()
+	end
 end
 
 function LSPApplicator:setup_restore_connection_on_detach()
