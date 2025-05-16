@@ -1,6 +1,7 @@
 local util = require("matchconfig.util.util")
 local tbl_util = require("matchconfig.util.table")
 local eval_util = require("matchconfig.options.util.eval")
+local log = require("matchconfig.util.log").new("lsp")
 
 local merge = require("matchconfig.options.util.merge")
 
@@ -95,6 +96,7 @@ function LSPApplicator:apply_to_barrier(call_b_idx, args)
 	end
 
 	local specs_merged = {}
+	log.debug("buffer %s has lsp-specs %s", args.buf, vim.inspect(specs_no_eval))
 
 	for lsp_name, _ in pairs(lsp_types) do
 		specs_merged[lsp_name] = {

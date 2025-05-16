@@ -61,6 +61,10 @@ function LspClientExt.start(bufnr, config)
 					local scope = item.scopeUri and vim.uri_to_fname(item.scopeUri) or root_dir
 					local settings = o.settings_by_root_dir[scope]
 
+					if not settings then
+						log.error("%s: server requests config for scope \"%s\", but settings do not exist in %s", o:identify(), scope, vim.inspect(o.settings_by_root_dir))
+						settings = {}
+					end
 					local value = lookup_section(settings, item.section)
 					if value == nil and item.section == "" then
 						value = settings
