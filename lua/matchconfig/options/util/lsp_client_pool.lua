@@ -168,8 +168,8 @@ function LspClientExt:try_reuse(bufnr, config)
 
 	if
 		not vim.deep_equal(self.cmd, config.cmd) or
-		not self.name == config.name or
-		not self.enable_per_workspace_config == config.enable_per_workspace_config then
+		not (self.name == config.name) or
+		not (self.enable_per_workspace_config == config.enable_per_workspace_config) then
 
 		-- todo: look into what other options may make servers incompatible.
 		log.debug(
