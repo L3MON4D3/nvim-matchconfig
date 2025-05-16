@@ -183,5 +183,6 @@ return {
 	reset = util.nop,
 	set_default_capabilities = function(caps)
 		default_capabilities = caps
-	end
+	end,
+	clean_unattached = function() lsp_client_pool:clean_unattached() end
 }
