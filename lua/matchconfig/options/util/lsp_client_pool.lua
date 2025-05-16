@@ -58,7 +58,7 @@ function LspClientExt.start(bufnr, config)
 				if item.section then
 					-- fall back to initial root_dir if it is nil.
 					-- This works for at least lua-language-server.
-					local scope = item.scope or root_dir
+					local scope = item.scopeUri and vim.uri_to_fname(item.scopeUri) or root_dir
 					local settings = o.settings_by_root_dir[scope]
 
 					local value = lookup_section(settings, item.section)
