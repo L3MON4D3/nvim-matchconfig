@@ -16,8 +16,11 @@ end
 
 ---@param bufinfo Matchconfig.BufInfo
 function DirMatcher:matches(bufinfo)
-	return bufinfo.dir:sub(1, #self.dir) == self.dir and self.dir
+	return bufinfo.dir:sub(1, #self.dir) == self.dir and (
+		bufinfo.dir:sub(#self.dir+1, #self.dir+1) == "/" or
+		bufinfo.dir:sub(#self.dir+1, #self.dir+1) == "") and self.dir
 end
+
 function DirMatcher:human_readable(include_matcher_id)
 	return make_human_readable(self.matcher_id, self.dir, include_matcher_id)
 end
