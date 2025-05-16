@@ -58,7 +58,7 @@ function LspClientExt.start(bufnr, config)
 				if item.section then
 					-- fall back to initial root_dir if it is nil.
 					-- This works for at least lua-language-server.
-					local scope = item.scopeUri and vim.uri_to_fname(item.scopeUri) or root_dir
+					local scope = item.scopeUri and fs.normalize_dir(vim.uri_to_fname(item.scopeUri)) or root_dir
 					local settings = o.settings_by_root_dir[scope]
 
 					if not settings then
@@ -160,7 +160,7 @@ end
 ---@param bufnr number
 ---@param config table
 function LspClientExt:try_reuse(bufnr, config)
-	local root_dir = config.root_dir or fallback_root_dir
+	local root_dir = config.root_dir and fs.normalize_dir(config.root_dir) or fallback_root_dir
 
 	if
 		not vim.deep_equal(self.cmd, config.cmd) or
