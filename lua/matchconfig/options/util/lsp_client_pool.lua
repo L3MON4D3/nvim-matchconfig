@@ -8,6 +8,11 @@ local function lookup_section(table, section)
 	return vim.tbl_get(table, unpack(keys))
 end
 
+local function scopeUri_to_path(scopeUri)
+	-- strip "file://"
+	return scopeUri:sub(8)
+end
+
 ---@class Matchconfig.LspClientExt
 ---Wraps neovims LspClient, and adds a layer for handling per-workspace
 ---configs.
@@ -39,7 +44,6 @@ function LspClientExt.start(bufnr, config)
 			vim.inspect(config))
 	end
 
-
 	-- declare new LspClientExt early so we can capture it in the
 	-- workspace/configuration handler.
 
@@ -58,7 +62,7 @@ function LspClientExt.start(bufnr, config)
 				if item.section then
 					-- fall back to initial root_dir if it is nil.
 					-- This works for at least lua-language-server.
-					local scope = item.scopeUri and fs.normalize_dir(vim.uri_to_fname(item.scopeUri)) or root_dir
+					local scope = item.scopeUri and fs.normalize_dir(scopeUri_to_path(item.scopeUri)) or fallback_root_dir
 					local settings = o.settings_by_root_dir[scope]
 
 					if not settings then
