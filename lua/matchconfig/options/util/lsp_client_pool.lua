@@ -26,7 +26,7 @@ end
 local LspClientExt = {}
 local LspClientExt_mt = {__index = LspClientExt}
 
-local fallback_root_dir = ""
+local fallback_root_dir = "_fallback_"
 function LspClientExt.start(bufnr, config)
 	-- normalization
 	local root_dir = config.root_dir and fs.normalize_dir(config.root_dir) or fallback_root_dir
