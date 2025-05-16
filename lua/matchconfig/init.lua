@@ -24,15 +24,12 @@ M.config = require("matchconfig.primitives.config").new
 M.actions = require("matchconfig.util.actions")
 M.eval = require("matchconfig.options.util.eval").new
 
-M.match_dir = gen_config.match_dir
-M.match_pattern = gen_config.match_pattern
-M.match_filetype = gen_config.match_filetype
-M.match_file = gen_config.match_file
 M.register = gen_config.register
 
 M.matchers = vim.tbl_map(function(i)
 	return i.new
 end, require("matchconfig.builtin_matchers"))
+
 M.log = require("matchconfig.util.log")
 
 return M
