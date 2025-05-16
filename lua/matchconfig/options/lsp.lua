@@ -132,7 +132,9 @@ function LSPApplicator:apply_to_barrier(call_b_idx, args)
 		end)
 
 		local client = lsp_client_pool:attach_matching(args.buf, lsp_spec)
-		table.insert(clients, client)
+		if client then
+			table.insert(clients, client)
+		end
 	end
 
 	self.attached_clients = clients

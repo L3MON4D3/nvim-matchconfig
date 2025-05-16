@@ -80,8 +80,10 @@ function LspClientExt.start(bufnr, config)
 	-- simulate old start_client behaviour (ie. never reuse, don't yet attach).
 	local client_id = vim.lsp.start(config, {reuse_client = util.no, attach = false})
 	if not client_id then
-		error("vim.lsp.start_client did not return an id!")
+		log.error("vim.lsp.start did not return a client_id with config %s", client_id, vim.inspect(config))
+		return nil
 	end
+
 	log.info("attaching buffer %s to client %s", bufnr, config.name)
 	vim.lsp.buf_attach_client(bufnr, client_id)
 
@@ -286,7 +288,7 @@ end
 ---new server.
 ---@param bufnr integer
 ---@param config table
----@return Matchconfig.LspClientExt
+---@return Matchconfig.LspClientExt?
 function LspClientPool:attach_matching(bufnr, config)
 	for _, ext_client in ipairs(self.clients) do
 		if ext_client:try_reuse(bufnr, config) then
@@ -295,6 +297,9 @@ function LspClientPool:attach_matching(bufnr, config)
 	end
 
 	local client_ext = LspClientExt.start(bufnr, config)
+	if not client_ext then
+		return nil
+	end
 	table.insert(self.clients, client_ext)
 
 	return client_ext
