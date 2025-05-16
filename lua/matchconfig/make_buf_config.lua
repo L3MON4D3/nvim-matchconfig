@@ -2,6 +2,7 @@ local new_config = require("matchconfig.primitives.config").new
 local tbl_util = require("matchconfig.util.table")
 local labeled_digraph = require("matchconfig.util.digraph").new_labeled
 local matchconfig = require("matchconfig.primitives.matchconfig")
+local fs = require("matchconfig.util.fs")
 
 local function bufname_to_dir(bufname)
 	if bufname == "" then
@@ -12,7 +13,7 @@ local function bufname_to_dir(bufname)
 		-- omit appended / and fugitive://
 		return bufname:sub(12, -2)
 	end
-	return vim.fn.fnamemodify(bufname, ":h")
+	return fs.normalize_dir(vim.fn.fnamemodify(bufname, ":h"))
 end
 
 -- generate config for buffer by

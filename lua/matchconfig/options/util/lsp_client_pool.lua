@@ -1,5 +1,6 @@
 local log = require("matchconfig.util.log").new("lsp-pool")
 local util = require("matchconfig.util.util")
+local fs = require("matchconfig.util.fs")
 
 -- taken from neovim runtime.
 local function lookup_section(table, section)
@@ -28,7 +29,7 @@ local LspClientExt_mt = {__index = LspClientExt}
 local fallback_root_dir = ""
 function LspClientExt.start(bufnr, config)
 	-- normalization
-	local root_dir = config.root_dir or fallback_root_dir
+	local root_dir = config.root_dir and fs.normalize_dir(config.root_dir) or fallback_root_dir
 	config.settings = config.settings or {}
 
 	-- override all custom handlers, let's say we don't support them for now.

@@ -1,4 +1,5 @@
 local make_human_readable = require("matchconfig.util.util").make_human_readable
+local fs = require("matchconfig.util.fs")
 
 local M = {}
 
@@ -10,7 +11,7 @@ local DirMatcher_mt = {__index = DirMatcher}
 DirMatcher.matcher_id = "dir"
 
 function DirMatcher.new(dir)
-	return setmetatable({ dir = dir }, DirMatcher_mt)
+	return setmetatable({ dir = fs.normalize_dir(dir) }, DirMatcher_mt)
 end
 
 ---@param bufinfo Matchconfig.BufInfo
