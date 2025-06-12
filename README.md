@@ -60,7 +60,8 @@ local make_generic = matchconfig.register(extra_matchers.make(), c{
 -- run `make build`.
 cmake_generic:after(make_generic)
 
--- for filenames that match README.md$ or DOC.md$, register two usercommands,
+-- for filenames that match README.md$ or DOC.md$ (ie. files named `README.md/DOC.md),
+-- register two usercommands,
 -- `:Gr` and `:S`, for starting and stopping a grip-server
 -- (https://github.com/joeyespo/grip), which can render markdown as it appears
 -- on github.
@@ -108,17 +109,18 @@ Note the following things:
    likely this is `~/.config/nvim`) and create the file `config.lua` in it. For
    a quick check that everything works correctly, try the following:
    ```lua
-    local matchconfig = require("matchconfig")
-    local matchers = matchconfig.matchers
-    local c = matchconfig.config
+   local mc = require("matchconfig")
+   local c = mc.config
+   local matchers = mc.matchers
 
-    matchconfig.register(matchers.filetype("python"), c{
-        run_buf = function()
-            print("Hello from nvim-matchconfig")
-        end
+   mc.register(matchers.filetype("python"), c{
+       run_buf = function()
+           print("Hello from nvim-matchconfig")
+       end
     })
    ```
    You should now see a short message upon opening a python-file.
+
 3. Define your own configs.  Reading the remainder of this README and DOC.md
    should give you some solid ideas on how to use `nvim-matchconfig` and what it
    is capable of.
