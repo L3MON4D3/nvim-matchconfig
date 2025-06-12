@@ -28,6 +28,10 @@ mc.register(matchers.pattern(".*.config/nvim/.*"), c{
 This would print "Hello from nvim-matchconfig" whenever a buffer whose name
 matches the pattern `.*.config/nvim/.*` is loaded.
 
+## Config
+This primitive is not very interesting, it merely groups all enabled `Option`s
+together and spreads out various operations onto all of them.
+
 ## Option
 The modifications a `Config` applies to a buffer are split up into multiple
 `Option`s. Every `Option` can define what happens when it is applied to a
@@ -61,7 +65,7 @@ mc.register(matchers.pattern(".*init.lua"), c{
 When merging multiple `run_buf` options, all passed functions will be executed
 while `run_buf_named` only runs the highest-priority function of any given name.
 
-So, with the example above, opening the file "$HOME/.config/nvim/init.lua" would
+So, with the example above, opening the file `$HOME/.config/nvim/init.lua` would
 print both "Hello from run_buf 1" and "Hello from run_buf 2", but only one of
 "Hello from named function 1" and "Hello from named function 2".
 
@@ -74,10 +78,10 @@ but it is easy to add more.
 
 ## Ordering
 
-Since more than one `Matchconfig` can match a buffer, it may be desired to
+Since more than one `Matchconfig` can match a buffer, it may be desirable to
 impose some kind of ordering (for example, to overwrite a keymap set by another
 `Matchconfig` without disabling it entirely). We support this via two functions,
-`:after` and `:before`:
+`after` and `before`:
 ```lua
 local h1 = mc.register(matchers.filetype("python"), c{
     run_buf = function()
@@ -100,14 +104,39 @@ local h3 = mc.register(matchers.filetype("python"), c{
 h1:before(h2)
 h3:after(h2)
 ```
-In this case, upon opening a python-file, the messages will be in the desired
-order (1 -> 2 -> 3).  
+In this case, upon opening a python-file, the messages will be in the order 1 ->
+2 -> 3.  
+The ordering can be thought of as introducing barriers into the execution of the
+merged options. While this is ultimately up to the specific options,
+theoretically they can be implemented s.t. _all_ options of some `Matchconfig`
+are executed before any option of another `Matchconfig`, e.g.
+```lua
+local h1 = mc.register(matchers.filetype("python"), c{
+    run_buf = function()
+        print("Hello buf 1")
+    end,
+    run_session = function()
+        print("Hello session 1")
+    end
+})
 
+local h2 = mc.register(matchers.filetype("python"), c{
+    run_buf = function()
+        print("Hello buf 2")
+    end,
+    run_session = function()
+        print("Hello session 2")
+    end
+})
+h1:before(h2)
+```
+Even though there are 2 different options at play here, this will print both the
+`*1`-messages before any of the `*2`-messages.
 
 ## Blacklisting
 
 Besides ordering `Matchconfig`s, it's also possible to prevent their
-application. Higher-priority `Matchconfig`s can disable (`:blacklist`) another
+execution. Higher-priority `Matchconfig`s can disable (`:blacklist`) another
 `Matchconfig`:
 ```lua
 local h1 = mc.register(matchers.dir("/home/user/dirA"), c{
@@ -127,7 +156,10 @@ h2:blacklist(h1)
 ```
 This will print `Hello1` when opening e.g. `dirA/file.lua`, `Hello1` and `Hello2`
 when opening `dirA/subdirB/file.lua`, and only `Hello2` when opening
-`dirA/subdirB/file.py`
+`dirA/subdirB/file.py`.
+Beside `blacklist`, there is also `unblacklist` (which also implies an
+`after`-ordering), and `blacklist_by` and `unblacklist_by`, which both imply a
+`before`-ordering.
 
 
 # Usage

@@ -5,17 +5,17 @@ feature-complete and flexible manner.
 
 Relevant features:
 * Declaratively define options (not just buffer-local or global
-  `vim.opt`-options, but any arbitrary code that changes a buffers state) that
-  should be applied to some buffer based on predicates (filename matches some
-  pattern, or file is inside some directory), their order (override less
-  specific options with more specific ones) and how they are merged when there
-  are collisions (for example the last provided value of an option has priority,
-  or all values are somehow combined)
-* Quickly edit currently-loaded options (jump to options that apply to the
-  current buffer, and, upon changing them, discard the old options and load the
-  new options)
-* The set of options that can be defined for a buffer is not set in stone but
-  can be supplanted by user-defined options.
+  `vim.opt`-options, but any arbitrary code that changes a buffers state) to
+  apply to some buffer based on predicates.  
+  For example, set a keybinding for all buffers whose filename matches
+  `.*README.md`, or configure a specific lsp for all `python` files in some
+  directory.  
+  Special care is taken to allow these options to be very minimal (quick to
+  create!), unloadable (remove them completely), and have well-defined merging
+  behaviour (in case more than one option applies to some buffer).
+* Quickly edit currently-loaded options.  
+  It is possible to quickly jump to any option that applies to the current
+  buffer, edit it, and reload the options for all open buffers.
 
 # Project State
 This is definitely very pre-1.0, so best only use it by pinning it to a commit,
@@ -25,7 +25,7 @@ issue](https://github.com/L3MON4D3/nvim-matchconfig/issues/1), so consider
 following it.
 
 
-## Example
+# Example
 
 The following code shows a few of the basic concepts of matchconfig:
 
@@ -43,6 +43,8 @@ local usercommand_buf = actions.usercommand_buf
 
 -- For all buffers that belong to a cmake-project, register a keybinding for
 -- running `cmake --build build`.
+-- A buffer belongs to a cmake project if a `CMakeLists.txt` can be found in any
+-- of its parent-directories.
 -- Note that ideally, this would be improved by using some repl-plugin for more
 -- interactivity.
 local cmake_generic = matchconfig.register(extra_matchers.cmake(), c{
@@ -56,34 +58,32 @@ local cmake_generic = matchconfig.register(extra_matchers.cmake(), c{
 })
 
 -- this time, register a keybinding on the same key-combo as before, but for
--- Makefile-based projects.
+-- Makefile-based projects (again, identified by searching upwards for a
+-- `Makefile`)
 local make_generic = matchconfig.register(extra_matchers.make(), c{
     run_buf = function(args)
         nnoremapsilent_buf("<Space>b", ":!cd " .. args.match_args .. " && make build<Cr>")
     end
 })
 
--- make sure that (arbitrarily) the make-binding supersedes the cmake-binding.
+-- make sure that (arbitrarily) the cmake-binding supersedes the make-binding.
 -- So in projects that have both a CMakeLists.txt and a Makefile, <space>b would
 -- run `make build`.
+-- Here this is achieved trivially by registering the cmake-keybind after the
+-- make-keybind, but this merging behaviour can be completely customized for
+-- every option.
 cmake_generic:after(make_generic)
 
--- for filenames that match README.md$ or DOC.md$ (ie. files named `README.md/DOC.md),
--- register two usercommands,
--- `:Gr` and `:S`, for starting and stopping a grip-server
--- (https://github.com/joeyespo/grip), which can render markdown as it appears
--- on github.
+-- for filenames that match README.md$ or DOC.md$ (ie. files named
+-- `README.md/DOC.md`), register two usercommands, `:Gr` and `:S`, for starting and
+-- stopping a grip-server (https://github.com/joeyespo/grip) (it can render
+-- markdown as it appears on github, very useful for previewing changes).
 matchconfig.register(matchers.pattern("README.md$") + matchers.pattern("DOC.md$"), c{
     run_buf = function(args)
         usercommand_buf("Gr", function()
-            local socket = require("socket")
-            local server = socket.bind("*", 0)
-            local _, port = server:getsockname()
-            server:close()
-
             io.popen(
                 "systemd-run --user -u $(systemd-escape grip_" .. args.file .. ") " ..
-                "grip -b " .. args.file .. " " .. port .. " 2> /dev/null")
+                "grip -b " .. args.file .. " 0 2> /dev/null")
         end, {})
         usercommand_buf("S", function()
             io.popen(
@@ -108,7 +108,7 @@ Note the following things:
 * `pick_current` only shows the most up-to-date information and no older,
   no-longer effective options.
 
-## Getting Started
+# Getting Started
 0. Make sure you're running Neovim version 0.10+.
 1. Install `nvim-matchconfig` using your favorite package-manager.
    Optionally follow a specific version (we adhere to semantic versioning) by
