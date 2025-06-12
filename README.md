@@ -17,6 +17,14 @@ Relevant features:
 * The set of options that can be defined for a buffer is not set in stone but
   can be supplanted by user-defined options.
 
+# Project State
+This is definitely very pre-1.0, so best only use it by pinning it to a commit,
+so it's excluded when more stable plugins are updated. Whenever a new breaking
+change is pushed, it, and a way to adapt to it will be posted to [this
+issue](https://github.com/L3MON4D3/nvim-matchconfig/issues/1), so consider
+following it.
+
+
 ## Example
 
 The following code shows a few of the basic concepts of matchconfig:
