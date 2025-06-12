@@ -175,9 +175,19 @@ also include custom options.
 # API
 
 # Tips
-## Use shortcuts for registering with common matchers
-Instead of `matchconfig.match(matchers.filetype("ft"), {...})` use
-`matchconfig.match_filetype("ft", {...})`
+* use abbreviations for the various matchers
+  ```lua
+  local mft = matchers.filetype
+  local mpattern = matchers.pattern
+  local mfile = matchers.file
+  local mdir = matchers.dir
+  ```
+* add usercommands for quickly jumping to active matchconfigs and the
+  config-file:
+  ```lua
+  vim.api.nvim_create_user_command("C", require("matchconfig").pick_current, {})
+  vim.api.nvim_create_user_command("CO", ":e " .. vim.uv.fs_realpath(require("matchconfig").get_configfile()), {})
+  ```
 
 # Appendix
 
