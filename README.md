@@ -151,3 +151,8 @@ DOC.md in the chapter `API-Setup`.
 
 The chapter `Tips` in DOC.md has suggestions for a good workflow with
 `nvim-matchconfig` as well as mappings and commands that may come in handy.
+
+My dotfiles also contain a pretty large `nvim-matchconfig`-config
+[here](https://github.com/L3MON4D3/Dotfiles/blob/main/nvim/configs.lua), with
+the setup
+[here](https://github.com/L3MON4D3/Dotfiles/blob/main/nvim/lua/plugins/matchconfig.lua)
